@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xnyu-debug-adress-template", "xnyu-debug-adress-template\xnyu-debug-adress-template.vcxproj", "{C40009A1-41EA-4D3E-A106-E812FB3C69EC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xnyu-debug-adress-template", "xnyu-debug-template\xnyu-debug-template.vcxproj", "{C40009A1-41EA-4D3E-A106-E812FB3C69EC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
