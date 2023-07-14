@@ -1,39 +1,55 @@
 #pragma once
 
-struct DebugAddress {
-    std::string nameParent;
-    std::string nameChild;
-    std::string nameFull;
-    Variable value;
-};
-
-struct DebugAddressParent {
-    std::string nameParent;
-    std::vector<DebugAddress> addresses;
-};
-
+// All Debug Addresses
 std::vector<DebugAddressParent> debugAdresses;
+
+// Buffer, that can be used to save memory
+int int32Buffer = 0;
+long long int64Buffer = 0;
+float floatBuffer = 0;
+double doubleBuffer = 0;
+bool boolBuffer = 0;
+BYTE byteBuffer = 0;
+char* stringBuffer = new char[2048];
+void* pointerBuffer;
 
 EXTERN_DLL_EXPORT void SetDebugAddressValue(DebugAddress* targetAddress)
 {
-    //
-    // This is the interface for setting debug values in memory
-    // Debug values can be written from TAS scripts
-    //
-    // Example: WriteVariableToMemory(targetAddress, myMemoryAddress);
-    //
+	//
+	// This function is called if the main mod writes a value from the Debug Menu.
+	// It should write the value from the DebugAddress to the memory address of the game
+	//
+
+	// Get the full name of the address
+	std::string name = targetAddress->nameFull;
+	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+
+	// EXAMPLE
+	// 
+	// if (name == "player.getposition") DbgWriteFloat(addressPosition, GetVariableFloat(&targetAddress->value))
+	// if (name == "player.gethp") DbgWriteInt32(addressHP, GetVariableInt32(&targetAddress->value))
+	// if (name == "player.isgamepaused") DbgWriteFloat(addressIsGamePaused, GetVariableBool(&targetAddress->value))
 }
 
 EXTERN_DLL_EXPORT void GetDebugAddressValue(DebugAddress* targetAddress)
 {
-    //
-    // This is the interface for reading debug values in memory
-    // Debug values can be read from TAS scripts and debug menu
-    // The debug menu however only reads the 'value' parameter
-    // The TAS reads the type specific parameter
-    // 
-    // Example: ReadVariableFromMemory(targetAddress, myMemoryAddress);
-    //
+	//
+	// This function is called if the main mod reads a value from the Debug Menu.
+	// It should write the read value from the address to the DebugAddress object
+	//
+
+	// Get the full name of the address
+	std::string name = targetAddress->nameFull;
+	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+
+	// Set value to 'none', if nothing was found
+	SetVariable(&targetAddress->value, "none");
+
+	// EXAMPLE
+	// 
+	// if (name == "player.getposition") SetVariable(&targetAddress->value, GetPlayerPosition());
+	// if (name == "player.gethp") SetVariable(&targetAddress->value, GetPlayerHP());
+	// if (name == "player.isgamepaused") SetVariable(&targetAddress->value, IsGamePaused());
 }
 
 

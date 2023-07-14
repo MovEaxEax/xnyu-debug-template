@@ -1,4 +1,6 @@
 #pragma once
+
+// Normal imports
 #include <windows.h>
 #include <windowsx.h>
 #include <iostream>
@@ -20,6 +22,61 @@
 #include <objidl.h>
 #include <cmath>
 #include <limits>
+#include <shlobj.h>
+#include <mutex>
+#include <unordered_set>
+#include <Processthreadsapi.h>
+#pragma comment(lib, "Kernel32.lib")
+
+// Subhook imports
+#define SUBHOOK_STATIC
+#include <subhook.h>
+#include "subhook.c"
+
+// DX9
+#include <d3d9.h>
+#include <d3dx9.h>
+#pragma comment (lib, "d3d9.lib")
+#pragma comment (lib, "d3dx9.lib")
+#include <DXErr.h>
+#pragma comment(lib, "DXErr.lib")
+
+// DX10
+#include <dxgiformat.h>
+#include <d3d10_1.h>
+#include <d3d10.h>
+#include <d3dx10.h>
+#include <d3dcommon.h>
+#include <D3Dcompiler.h>
+#pragma comment (lib, "d3d10_1.lib")
+#pragma comment (lib, "d3d10.lib")
+#pragma comment (lib, "d3dx10.lib")
+#pragma comment (lib, "D3Dcompiler.lib")
+
+// DX12
+#include <d3d11.h>
+#include <D3DX11.h>
+#include <d2d1_1.h>
+#include <dxgi1_2.h>
+#include <d3dcompiler.h>
+#include <wchar.h>
+#pragma comment (lib, "d3d11.lib")
+#pragma comment (lib, "D3DX11.lib")
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "legacy_stdio_definitions.lib")
+
+// DX12
+#include <d3d12.h>
+#include <dxgi1_4.h>
+
+
+
+// PI definement (Comes always handy)
+#define PI 3.14159265
+
+
 
 std::string ToHexString(int value)
 {
@@ -56,6 +113,92 @@ std::string ToHexString(double value)
     return stream.str();
 }
 
+std::string GetCurrentDateTime() {
+    std::stringstream ss;
+    auto now = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(now);
+    ss << std::put_time(std::localtime(&time), "%Y-%m-%d %H-%M-%S");
+    return ss.str();
+}
+
+DWORD GetTextSectionBaseAddress(HMODULE moduleHandle, std::string sectionName) {
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)moduleHandle;
+    PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((BYTE*)moduleHandle + dosHeader->e_lfanew);
+
+    PIMAGE_SECTION_HEADER sectionHeader = IMAGE_FIRST_SECTION(ntHeaders);
+    for (UINT i = 0; i < ntHeaders->FileHeader.NumberOfSections; ++i, ++sectionHeader) {
+        if (memcmp(sectionHeader->Name, sectionName.c_str(), 5) == 0) {
+            return (DWORD)moduleHandle + sectionHeader->VirtualAddress;
+        }
+    }
+
+    return NULL;
+}
+
+struct Vector3 {
+    union {
+        struct {
+            float x;
+            float z;
+            float y;
+        };
+        float arr[3];
+    };
+};
+
+typedef void(__stdcall* TASRoutineT)();
+TASRoutineT pTASRoutine = nullptr;
+
+uintptr_t memoryRegionsStart[65000];
+uintptr_t memoryRegionsEnd[65000];
+int memoryRegionsCounter = 0;
+
+void GetMemoryRegions(uintptr_t* srcRegions, uintptr_t* dstRegions, int* count) {
+    HANDLE processHandle = GetCurrentProcess();
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo(&systemInfo);
+
+    int Counter = 0;
+
+    LPVOID lpAddress = systemInfo.lpMinimumApplicationAddress;
+    while (lpAddress < systemInfo.lpMaximumApplicationAddress) {
+        MEMORY_BASIC_INFORMATION memInfo;
+        SIZE_T bytesReturned = VirtualQueryEx(processHandle, lpAddress, &memInfo, sizeof(memInfo));
+        if (bytesReturned == 0) {
+            break;
+        }
+
+        // Check if the memory region is readable and/or writable
+        if (memInfo.Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
+            Counter++;
+        }
+
+        lpAddress = (LPVOID)((DWORD_PTR)memInfo.BaseAddress + memInfo.RegionSize);
+    }
+
+    Counter = 0;
+    lpAddress = systemInfo.lpMinimumApplicationAddress;
+    while (lpAddress < systemInfo.lpMaximumApplicationAddress) {
+        MEMORY_BASIC_INFORMATION memInfo;
+        SIZE_T bytesReturned = VirtualQueryEx(processHandle, lpAddress, &memInfo, sizeof(memInfo));
+        if (bytesReturned == 0) {
+            break;
+        }
+
+        if (memInfo.Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
+            uintptr_t start = (uintptr_t)memInfo.BaseAddress;
+            uintptr_t end = (uintptr_t)memInfo.BaseAddress + memInfo.RegionSize;
+            std::memcpy(srcRegions + (Counter * sizeof(uintptr_t)), &start, sizeof(uintptr_t*));
+            std::memcpy(dstRegions + (Counter * sizeof(uintptr_t)), &end, sizeof(uintptr_t*));
+            Counter++;
+        }
+
+        lpAddress = (LPVOID)((DWORD_PTR)memInfo.BaseAddress + memInfo.RegionSize);
+    }
+
+    std::memcpy(count, &Counter, sizeof(int));
+}
+
 //
 // Definements ---------------------------------------------------------------------
 //
@@ -66,6 +209,7 @@ struct DebugSettings {
     std::string config_modname;
     std::string config_processname;
     std::string config_version;
+    std::string config_tashook;
     std::string config_mousedriver_set;
     std::string config_mousedriver_get;
     std::string config_keyboarddriver_set;
@@ -73,6 +217,8 @@ struct DebugSettings {
     std::string config_joystickdriver_set;
     std::string config_joystickdriver_get;
     std::string config_graphicdriver;
+    std::string config_d3d9_hook;
+    bool config_rawinput_demand;
     std::string config_root_directory;
     std::string config_settings_directory;
     std::string config_script_directory;
@@ -81,6 +227,9 @@ struct DebugSettings {
     std::string config_debugmod_directory;
     std::string config_debugfunction_directory;
     std::string config_debugaddress_directory;
+    std::string config_editormode_settings_directory;
+    std::string config_editormode_actions_directory;
+    std::string config_supervision_directory;
     std::string config_inputmapping_directory;
     std::string config_savefile_directory;
     std::string config_debugconfig_directory;
@@ -96,11 +245,42 @@ struct DebugFeatures
     bool debugFunction;
     bool savefileEditor;
     bool supervision;
+    bool editorMode;
 };
 
+struct DebugReferences
+{
+    void* logger;
+    void* drawRectangle;
+    void* drawText;
+    void* TASRoutine;
+    void* installGraphicsHook;
+    void* removeGraphicsHook;
+};
 
+struct Point
+{
+    float x;
+    float y;
+};
+
+std::string GetAppDataPath() {
+    TCHAR path[MAX_PATH];
+    if (SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, path) == MB_OK) {
+        std::wstring appDataPath = std::wstring(path) + L"\\";
+        return std::string(appDataPath.begin(), appDataPath.end());
+    }
+    return "";
+}
+
+std::string AppdataRoamingPath = GetAppDataPath();
+HMODULE GameBaseAddress = GetModuleHandle(NULL);
 
 // After includes
+#include "xNyuHook.h"
+#include "ThreadHooker.h"
+#include "GraphicsHook.h"
+
 #include "Typedefs.h"
 #include "xNyuDrawingEssentials.h"
 #include "BasePointer.h"
@@ -108,9 +288,15 @@ struct DebugFeatures
 #include "WriteMemory.h"
 #include "SigScan.h"
 #include "Variables.h"
+#include "Settings.h"
+
+#include "DebugAddressesGlobals.h"
+#include "DebugFunctionsGlobals.h"
+
 #include "DebugAddresses.h"
 #include "DebugFunctions.h"
 #include "SavefileEditor.h"
 #include "Supervision.h"
+#include "EditorMode.h"
 
 

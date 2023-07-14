@@ -22,6 +22,9 @@
     <Filter Include="Headerdateien\features">
       <UniqueIdentifier>{7aac1014-11a1-4dee-b0cd-235c6a05fc60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Headerdateien\globals">
+      <UniqueIdentifier>{ac8b3fae-ac81-4194-af98-7cec6252f88c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -64,6 +67,27 @@
       <Filter>Headerdateien\features</Filter>
     </ClInclude>
     <ClInclude Include="Supervision.h">
+      <Filter>Headerdateien\features</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadHooker.h">
+      <Filter>Headerdateien\essentials</Filter>
+    </ClInclude>
+    <ClInclude Include="xNyuHook.h">
+      <Filter>Headerdateien\essentials</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsHook.h">
+      <Filter>Headerdateien\features</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugAddressesGlobals.h">
+      <Filter>Headerdateien\globals</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugFunctionsGlobals.h">
+      <Filter>Headerdateien\globals</Filter>
+    </ClInclude>
+    <ClInclude Include="EditorMode.h">
+      <Filter>Headerdateien\features</Filter>
+    </ClInclude>
+    <ClInclude Include="Settings.h">
       <Filter>Headerdateien\features</Filter>
     </ClInclude>
   </ItemGroup>

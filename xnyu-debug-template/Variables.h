@@ -165,7 +165,43 @@ std::string GetValueType(std::string value)
 
 void SetVariable(Variable* variable, std::string value)
 {
-    if (CheckVariableType(variable->type, value)) variable->value = value;
+    if (variable->type == "string") variable->value = value;
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, int value)
+{
+    if (variable->type == "int32") variable->value = std::to_string(value);
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, long long value)
+{
+    if (variable->type == "int64") variable->value = std::to_string(value);
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, float value)
+{
+    if (variable->type == "float") variable->value = std::to_string(value);
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, double value)
+{
+    if (variable->type == "double") variable->value = std::to_string(value);
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, bool value)
+{
+    if (variable->type == "bool") variable->value = value ? "true" : "false";
+    else variable->value = "none";
+}
+
+void SetVariable(Variable* variable, BYTE value)
+{
+    if (variable->type == "byte") variable->value = std::to_string(value);
     else variable->value = "none";
 }
 
